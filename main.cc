@@ -10,17 +10,20 @@ const int WIDTH = 68,
           B = 5,
           N_SQUARES = (WIDTH * HEIGHT) / (A*A + B*B);
 
-struct Quadrat {
+struct SquareFilling {
     uint8_t nA = 0, nB = 0;
     vector<uint8_t> height = {0}, length = {WIDTH}; // Intervals
     bitset<2*N_SQUARES> insertions;
     size_t hash_value;
+    bool did_flip = false; // Helper variable to reconstruct square
 
-    bool operator ==(const Quadrat & q) const {
+    bool operator ==(const SquareFilling & q) const {
       return hash_value == q.hash_value;
     }
 
     bool add_square(uint8_t size) {
+      did_flip = false;
+
       /* Find min height interval */
       size_t i = distance(height.begin(), min_element(height.begin(), height.end()));
 
@@ -74,7 +77,9 @@ struct Quadrat {
       }
 
       /* Increment nA or nB and add to insertions bitset */
-      insertions[size == A ? nA++ : nB++] = (size == A);
+
+      insertions[nA + nB] = (size == B);
+      size == A ? nA++ : nB++;
       if (nA > N_SQUARES or nB > N_SQUARES)
         return false;
 
@@ -82,6 +87,7 @@ struct Quadrat {
       for (size_t i = 0; i < height.size()/2; ++i)
         if (height[i] != height[height.size()-i-1]) {
           if (height[i] > height[height.size()-i-1]) {
+            did_flip = true;
             height = vector<uint8_t>(height.rbegin(), height.rend());
             length = vector<uint8_t>(length.rbegin(), length.rend());
           }
@@ -100,7 +106,7 @@ struct Quadrat {
     }
 };
 
-ostream& operator<<(ostream& os, const Quadrat& q) {
+ostream& operator<<(ostream& os, const SquareFilling& q) {
   for (size_t i = 0; i < q.height.size(); ++i)
     for (int j = 0; j < q.length[i]; ++j)
       os << int(q.height[i]) << " ";
@@ -110,28 +116,50 @@ ostream& operator<<(ostream& os, const Quadrat& q) {
 }
 
 struct Hash {
-  size_t operator() (const Quadrat &q) const {
+  size_t operator() (const SquareFilling &q) const {
     return q.hash_value;
   }
 };
 
-void write_square(bitset<2*N_SQUARES> ordre) {
-  cout << "TODO" << endl;
+void write_square(bitset<2*N_SQUARES> insertions, int n) {
+  SquareFilling sq;
+  vector<string> v(HEIGHT, string(WIDTH, '.'));
+  int step = 0;
+  while (step < n) {
+    for (int i = 0; i < HEIGHT; ++i)
+      for (int j = 0; j < WIDTH and step < n; ++j)
+        if (v[i][j] == '.') {
+          int size = (insertions[step++] ? B : A);
+          for (int k = 0; k < size; ++k)
+            for (int l = 0; l < size; ++l)
+              v[i+k][j+l] = '0' + size;
+          sq.add_square(size);
+          if (sq.did_flip) {
+            for (auto &s : v)
+              s = string(s.rbegin(), s.rend());
+            goto next_step;
+          }
+        }
+    next_step:;
+  }
+
+  for (auto& s : v)
+    cerr << s << endl;
 }
 
 
 int main() {
   /* TODO: read sizes from argv */
 
-  unordered_set<Quadrat, Hash> set1, set2;
-  set1.insert(Quadrat());
+  unordered_set<SquareFilling, Hash> set1, set2;
+  set1.insert(SquareFilling());
 
   for (int n = 0; n < 2*N_SQUARES; ++n) {
     cerr << "Step " << n << ": " << set1.size() << " profiles." << endl;
 
     for (auto it = set1.cbegin(); it != set1.cend(); set1.erase(it++)) {
       // cerr << *it << endl;
-      Quadrat q1(*it), q2(*it);
+      SquareFilling q1(*it), q2(*it);
       if (q1.add_square(A))
         set2.insert(q1);
       if (q2.add_square(B))
@@ -139,11 +167,12 @@ int main() {
     }
 
     swap(set1, set2);
-    // if (n == 40) break;
+    if (n == 40) break;
   }
 
   if (not set1.empty()) {
-    cout << *set1.begin() << endl;
-    write_square(set1.begin()->insertions);
+    auto it = set1.begin();
+    cout << *it << endl;
+    write_square(it->insertions, int(it->nA) + it->nB);
   }
 }
