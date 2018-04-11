@@ -21,22 +21,6 @@ class Quadrat {
       return hash_value == q.hash_value;
     }
 
-    void escriu() const {
-      vector<string> v(HEIGHT, string(WIDTH, 'x'));
-      int pas = 0;
-      for (int i = 0; i < HEIGHT; ++i)
-        for (int j = 0; j < WIDTH; ++j)
-          if (v[i][j] == 'x') {
-            int mida = (tria[pas++] ? B : A);
-            for (int k = 0; k < mida; ++k)
-              for (int l = 0; l < mida; ++l)
-                v[i+k][j+l] = '0' + mida;
-          }
-
-      for (auto& s : v)
-        cerr << s << endl;
-    }
-
     bool afegir(uint8_t mida) {
       bool cal_comprovar_el_minim = false;
 
@@ -151,7 +135,14 @@ struct Hash {
 };
 
 
+void write_square(bitset<2*N_QUADRATS> ordre) {
+  cout << "TODO" << endl;
+}
+
+
 int main() {
+  /* TODO: read sizes from argv */
+
   unordered_set<Quadrat, Hash> set1, set2;
   set1.insert(Quadrat());
 
@@ -168,9 +159,11 @@ int main() {
     }
 
     swap(set1, set2);
-    // if (n == 40) break;
+    if (n == 40) break;
   }
 
-  if (not set1.empty())
-    cout << *(set1.begin()) << endl;
+  if (not set1.empty()) {
+    cout << *set1.begin() << endl;
+    write_square(set1.begin()->tria);
+  }
 }
