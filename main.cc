@@ -12,7 +12,7 @@ const int WIDTH = 68,
 
 class Quadrat {
   public:
-    uint8_t height = 0, nA = 0, nB = 0;
+    uint8_t nA = 0, nB = 0;
     vector<uint8_t> altura = {0}, repeats = {WIDTH};
     bitset<2*N_QUADRATS> tria;
     size_t hash_value;
@@ -22,10 +22,8 @@ class Quadrat {
     }
 
     bool afegir(uint8_t mida) {
-      bool cal_comprovar_el_minim = false;
-
       /* Afegir element al vector on toque */
-      size_t i = distance(altura.begin(), find(altura.begin(), altura.end(), 0));
+      size_t i = distance(altura.begin(), min_element(altura.begin(), altura.end()));
 
       // Massa petit
       if (repeats[i] < mida)
@@ -40,60 +38,45 @@ class Quadrat {
         if (repeats[i] == 1 or repeats[i] == 2 or repeats[i] == 4 or repeats[i] == 7)
           return false;
 
-        if (i > 0 and altura[i-1] == mida) {
+        if (i > 0 and altura[i-1] == altura[i] + mida) {
           // Juntar amb l'anterior
           repeats[i-1] += mida;
         }
         else {
           // Inserir si a l'inici o l'anterior és diferent
-          altura.insert(altura.begin() + i, mida);
+          altura.insert(altura.begin() + i, altura[i] + mida);
           repeats.insert(repeats.begin() + i, mida);
         }
       }
       // Igual mida
       else if (repeats[i] == mida) {
-        cal_comprovar_el_minim = true;
-
         // Juntar els 3
-        if (i > 0 and altura[i-1] == mida and i+1 < altura.size() and altura[i+1] == mida) {
+        if (i > 0 and altura[i-1] == altura[i] + mida and i+1 < altura.size() and altura[i+1] == altura[i] + mida) {
           repeats[i-1] += mida + repeats[i+1];
           altura.erase(altura.begin()+i, altura.begin()+i+2);
           repeats.erase(repeats.begin()+i, repeats.begin()+i+2);
         }
         // Juntar a l'esquerra
-        else if (i > 0 and altura[i-1] == mida) {
+        else if (i > 0 and altura[i-1] == altura[i] + mida) {
           repeats[i-1] += mida;
           altura.erase(altura.begin() + i);
           repeats.erase(repeats.begin() + i);
         }
         // Juntar a la dreta
-        else if (i+1 < altura.size() and altura[i+1] == mida) {
+        else if (i+1 < altura.size() and altura[i+1] == altura[i] + mida) {
           repeats[i+1] += mida;
           altura.erase(altura.begin() + i);
           repeats.erase(repeats.begin() + i);
         }
         // Canviar mida
         else
-          altura[i] = mida;
+          altura[i] += mida;
       }
 
       /* Increment nA or nB and add to tria */
       tria[mida == A ? nA++ : nB++] = (mida == A);
       if (nA > N_QUADRATS or nB > N_QUADRATS)
         return false;
-
-      /* Posar la mínima altura a zero */
-      if (cal_comprovar_el_minim) {
-        uint8_t minim = *min_element(altura.begin(), altura.end());
-        if (minim > 0) {
-          height += minim;
-          for (size_t i = 0; i < altura.size(); ++i) {
-            altura[i] -= minim;
-            if (altura[i] == 0 and (repeats[i] == 1 or repeats[i] == 2 or repeats[i] == 4 or repeats[i] == 7))
-              return false;
-          }
-        }
-      }
 
       /* Flip skyline if necessary */
       for (size_t i = 0; i < altura.size()/2; ++i)
@@ -110,7 +93,6 @@ class Quadrat {
       s.insert(end(s), begin(altura), end(altura));
       s.insert(end(s), begin(repeats), end(repeats));
       s.push_back(nA);
-      s.push_back(height);
       hash<string> hash_fn;
       hash_value = hash_fn(s);
 
@@ -119,10 +101,9 @@ class Quadrat {
 };
 
 ostream& operator<<(ostream& os, const Quadrat& q) {
-  os << int(q.height) << " ";
   for (size_t i = 0; i < q.altura.size(); ++i)
-    os << string(q.repeats[i], '0' + q.altura[i]);
-  os << " ";
+    for (int j = 0; j < q.repeats[i]; ++j)
+      os << int(q.altura[i]) << " ";
   for (int i = 0; i < q.nA + q.nB; ++i)
     os << (q.tria[i] ? B : A);
   return os;
