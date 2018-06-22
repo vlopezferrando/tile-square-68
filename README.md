@@ -1,4 +1,4 @@
-**Is it possible to fill a square of side 68 with an equal number of squares of side 3 and 5**?
+**Is it possible to fill a square of side 68 with an equal number of squares of side 3 and 5?**
 
 This C++ program does an exhaustive search of all possible tilings of a 68x68 square using 136 3x3 and 136 5x5 squares.
 
